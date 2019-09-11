@@ -1,0 +1,11 @@
+{application,emlt,
+             [{applications,[kernel,stdlib,elixir,logger,runtime_tools]},
+              {description,"emlt"},
+              {modules,['Elixir.Emlt','Elixir.Emlt.Application',
+                        'Elixir.Emlt.NN.Network','Elixir.Emlt.NN.Neuron',
+                        'Elixir.Emlt.NN.Neuron.Pool',
+                        'Elixir.Emlt.NN.NeuronWorker',
+                        'Elixir.Emlt.NN.Storage']},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.Emlt.Application',[]}}]}.
