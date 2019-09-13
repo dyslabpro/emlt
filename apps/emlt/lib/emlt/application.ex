@@ -6,9 +6,11 @@ defmodule Emlt.Application do
   use Application
 
   def start(_type, _args) do
+    _neurons = :ets.new(:neurons, [:set, :public, :named_table])
+    _neuron_connection = :ets.new(:neuron_connections, [:set, :public, :named_table])
     children = [
       Emlt.NN.Neuron.Pool,
-      Emlt.NN.Storage,
+      Emlt.NN.Storage.Pool,
       Emlt.NN.Network
     ]
 

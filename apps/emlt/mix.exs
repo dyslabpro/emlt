@@ -35,7 +35,11 @@ defmodule Emlt.MixProject do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [ {:poolboy, "~> 1.5.1"}]
+    [ 
+      {:poolboy, "~> 1.5.1"},
+      {:matrex, "~> 0.6"},
+      {:csv, "~> 2.0.0"},
+  ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
