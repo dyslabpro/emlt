@@ -39,6 +39,7 @@ defmodule Emlt.MixProject do
       {:poolboy, "~> 1.5.1"},
       {:matrex, "~> 0.6"},
       {:csv, "~> 2.0.0"},
+      {:math, "~> 0.3.0"},
   ]
   end
 

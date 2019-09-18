@@ -37,4 +37,14 @@ defmodule Emlt.NN.StorageWorker do
     {:reply, n, state}
   end
 
+  def handle_call({:match, opts}, _from, state) do
+    n = :ets.match_object(:neurons, opts)
+    {:reply, n, state}
+  end
+
+  def handle_call({:match_nc, opts}, _from, state) do
+    n = :ets.match_object(:neuron_connections, opts)
+    {:reply, n, state}
+  end
+
 end

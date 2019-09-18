@@ -2,9 +2,9 @@ defmodule Emlt.NN.Neuron.Pool do
     @moduledoc false
     use Supervisor
   
-    @pool_name :neuron_worker_pool
-    @pool_size 20
-    @pool_max_overflow 2
+    @pool_name :neuron_worker_pool_
+    @pool_size 2000
+    @pool_max_overflow 200
 
   
     def start_link(opts \\ []) do
@@ -14,7 +14,7 @@ defmodule Emlt.NN.Neuron.Pool do
     def init(opts) do
   
       pool_opts = [
-        name: {:local, @pool_name},
+        name: {:local, get_pool_name(opts)},
         worker_module: Emlt.NN.NeuronWorker,
         size: @pool_size,
         max_overflow: @pool_max_overflow
@@ -29,5 +29,9 @@ defmodule Emlt.NN.Neuron.Pool do
       ]
   
       supervise(children, strategy: :one_for_one, name: __MODULE__)
+    end
+
+    defp get_pool_name(layer) do
+       "neuron_worker_pool_#{layer}" |> String.to_atom
     end
   end

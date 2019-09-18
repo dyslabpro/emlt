@@ -8,12 +8,13 @@ defmodule Emlt.Interfaces.Matrix do
         if(matrix[x][y] > 0) do
           color_value = matrix[x][y]
 
-          %{
-            n_out: {x, y, 1},
-            n_in: {0, 0, 0},
-            msg: color_value
-          }
-          |> Emlt.NN.Neuron.signal()
+          spawn(Emlt.NN.Neuron, :signal, [
+            %{
+              n_out: {x, y, 1},
+              n_in: {0, 0, 0},
+              signal: color_value
+            }
+          ])
         end
       end)
     end)

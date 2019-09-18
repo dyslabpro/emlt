@@ -3,8 +3,8 @@ defmodule Emlt.NN.Storage.Pool do
   use Supervisor
 
   @pool_name :storage_worker_pool
-  @pool_size 20
-  @pool_max_overflow 2
+  @pool_size 2000
+  @pool_max_overflow 200
 
 
   def start_link(opts \\ []) do

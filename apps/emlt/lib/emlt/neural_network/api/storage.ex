@@ -4,7 +4,7 @@ defmodule Emlt.NN.Storage do
   """
  
   @pool_name :storage_worker_pool
-
+  
   
 
   def insert(opts) do
@@ -16,7 +16,7 @@ defmodule Emlt.NN.Storage do
   end
 
   def update(opts) do
-    poolboy_exec(:update, opts, :call)
+    poolboy_exec(:insert, opts, :cast)
   end
 
   def insert_nc(opts) do
@@ -28,9 +28,16 @@ defmodule Emlt.NN.Storage do
   end
 
   def update_nc(opts) do
-    poolboy_exec(:update_nc, opts, :call)
+    poolboy_exec(:insert_nc, opts, :cast)
   end
 
+  def match(opts) do
+    poolboy_exec(:match, opts, :call)
+  end
+
+  def match_nc(opts) do
+    poolboy_exec(:match_nc, opts, :call)
+  end
   
 
   defp poolboy_exec(command_name, opts, op) do

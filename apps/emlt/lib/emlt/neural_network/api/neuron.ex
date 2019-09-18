@@ -1,32 +1,27 @@
 defmodule Emlt.NN.Neuron do
-
-
   @moduledoc """
     This is Api for neuron module
   """
   alias Emlt.NN.{Neuron, Network, NeuronConnection, Storage}
 
-  @pool_name :neuron_worker_pool
+  
 
-  def preload_inbound_connections(opts) do
-    {key, neuron} = opts
+  def preload_inbound_connections(neuron) do
+    list = Storage.match_nc({[:_, {neuron.x, neuron.y, neuron.z}], :_})
+    inbound_connections = list |> Enum.map(fn inc -> elem(inc, 1) end)
 
-    prev_layer =
+    neuron |> Map.merge(%{inbound_connections: inbound_connections})
+  end
+
+  def preload_outbound_connections(neuron) do
+    next_layers =
       case neuron.z do
-        1 ->
-          get_first_layers_keys()
-
-        _ ->
-          get_prev_layers_keys(neuron.x, neuron.y, neuron.z)
+        3 -> []
+        2 -> get_last_layers(neuron.x, neuron.y, neuron.z)
+        _ -> get_next_layers(neuron.x, neuron.y, neuron.z)
       end
 
-    inbound_connections =
-      Enum.map(prev_layer, fn nc ->
-        NeuronConnection.get([nc, {neuron.x, neuron.y, neuron.z}]) |> hd
-      end)
-
-    neuron = neuron |> Map.merge(%{inbound_connections: inbound_connections})
-    {key, neuron}
+    neuron |> Map.merge(%{outbound_connections: next_layers})
   end
 
   def insert(opts) do
@@ -34,7 +29,8 @@ defmodule Emlt.NN.Neuron do
   end
 
   def get(opts) do
-    Storage.get(opts) |> hd
+    {_key, neuron} = Storage.get(opts) |> hd
+    neuron
   end
 
   def update(opts) do
@@ -49,18 +45,23 @@ defmodule Emlt.NN.Neuron do
     case op do
       :call ->
         :poolboy.transaction(
-          @pool_name,
+          get_pool_name(opts),
           fn pid -> GenServer.call(pid, {command_name, opts}) end,
           :infinity
         )
 
       :cast ->
         :poolboy.transaction(
-          @pool_name,
+          get_pool_name(opts),
           fn pid -> GenServer.cast(pid, {command_name, opts}) end,
           :infinity
         )
     end
+  end
+
+  def get_pool_name(opts) do
+    {_x, _y, z} = opts.n_out
+    "neuron_worker_pool_#{z}" |> String.to_atom()
   end
 
   def get_next_layers(x, y, z) do
@@ -69,7 +70,7 @@ defmodule Emlt.NN.Neuron do
         into: [],
         do: %{
           key: [{x, y, z}, {i, j, z + 1}],
-          weight: Enum.random(-100..100) / 10,
+          weight: Enum.random(-14..14),
           signal: 0
         }
   end
@@ -80,7 +81,7 @@ defmodule Emlt.NN.Neuron do
         into: [],
         do: %{
           key: [{x, y, z}, {i, j, z - 1}],
-          weight: Enum.random(-100..100) / 10,
+          weight: Enum.random(-14..14),
           signal: 0
         }
   end
@@ -93,11 +94,11 @@ defmodule Emlt.NN.Neuron do
   end
 
   def get_last_layers(x, y, z) do
-    for x <- 0..9,
+    for xl <- 0..9,
         into: [],
         do: %{
-          key: [{x, y, z}, {x, 1, 3}],
-          weight: Enum.random(-100..100) / 10,
+          key: [{x, y, z}, {xl, 1, 3}],
+          weight: Enum.random(-14..14),
           signal: 0
         }
   end
@@ -106,5 +107,14 @@ defmodule Emlt.NN.Neuron do
     [
       {0, 0, 0}
     ]
+  end
+
+  def get_activated_value(neuron) do
+    {key, n} = neuron
+    n.activated_value
+  end
+
+  def init_weight() do
+    # range = [-28/2 , 28/2]
   end
 end

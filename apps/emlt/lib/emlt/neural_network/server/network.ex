@@ -1,7 +1,7 @@
 defmodule Emlt.NN.Network do
   use GenServer
 
-  alias Emlt.NN.{Neuron, Network, NeuronConnection, Storage}
+  alias Emlt.NN.{Neuron, NeuronConnection}
 
   @doc """
   Запуск и линковка нашей очереди. Это вспомогательный метод.
@@ -14,15 +14,11 @@ defmodule Emlt.NN.Network do
   Функция обратного вызова для GenServer.init/1
   """
   def init(state) do
-    init_data()
-
-    {:ok, state}
-  end
-
-  defp init_data do
     init_data(0, 9, 1, 1, 3)
     init_data(1, 28, 1, 28, 2)
     init_data(1, 28, 1, 28, 1)
+
+    {:ok, state}
   end
 
   defp init_data(x_start, x_end, y_start, y_end, z) do
@@ -39,10 +35,10 @@ defmodule Emlt.NN.Network do
         _ -> Neuron.get_next_layers(x, y, z)
       end
 
-    if z = 1 do
+    if z == 1 do
       %{
         key: [{0, 0, 0}, {x, y, z}],
-        weight: Enum.random(-100..100) / 10,
+        weight: 10,
         signal: 0
       }
       |> NeuronConnection.insert()

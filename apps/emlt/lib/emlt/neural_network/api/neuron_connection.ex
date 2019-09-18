@@ -3,14 +3,15 @@ defmodule Emlt.NN.NeuronConnection do
   @pool_name :neuron_worker_pool
 
   def insert(opts) do
-    Storage.insert_nc opts
+    Storage.insert_nc(opts)
   end
 
   def get(opts) do
-    Storage.get_nc opts
+    {_key, nc} = Storage.get_nc(opts) |> hd
+    nc
   end
 
   def update(opts) do
-    Storage.update_nc opts
+    Storage.update_nc(opts)
   end
 end
