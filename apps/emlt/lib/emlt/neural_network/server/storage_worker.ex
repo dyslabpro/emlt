@@ -46,5 +46,5 @@ defmodule Emlt.NN.StorageWorker do
     n = :ets.match_object(:neuron_connections, opts)
     {:reply, n, state}
   end
-
+  
 end

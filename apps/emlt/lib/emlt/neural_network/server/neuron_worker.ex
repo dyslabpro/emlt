@@ -15,16 +15,16 @@ defmodule Emlt.NN.NeuronWorker do
     {:ok, state}
   end
 
-  def handle_cast({:signal, %{n_in: n_in, n_out: n_out, signal: signal}}, state) do
+  def handle_cast({:signal, n_attr}, state) do
     neuron =
-      n_out
-      |> Neuron.get()
+      n_attr
+      |> neuron_get()
 
     if(neuron.activated_value == 0) do
       neuron
-      |> Neuron.preload_inbound_connections()
-      |> Neuron.preload_outbound_connections()
-      |> update_inbound_connections(n_in, signal)
+      |> preload_inbound_connections()
+      |> preload_outbound_connections()
+      # |> update_inbound_connections(n_in, signal)
       |> check_activate()
     end
 
@@ -40,33 +40,12 @@ defmodule Emlt.NN.NeuronWorker do
       current_value: neuron.current_value,
       inbound_connections: []
     }
-    |> Neuron.update()
+    |> neuron_insert()
 
     neuron
   end
 
-  defp update_inbound_connections(neuron, n_in, signal) do
-    inbound_connections =
-      neuron.inbound_connections
-      |> Enum.map_every(1, fn inc ->
-        [inc_in, _inc_out] = inc.key
-
-        if inc_in == n_in do
-          %{
-            key: inc.key,
-            weight: inc.weight,
-            signal: signal
-          }
-          |> NeuronConnection.update()
-
-          inc |> Map.merge(%{signal: signal})
-        else
-          inc
-        end
-      end)
-
-    neuron |> Map.merge(%{inbound_connections: inbound_connections})
-  end
+  
 
   defp sigmoid(x) do
     1 / (1 + Math.exp(-x))
@@ -82,14 +61,12 @@ defmodule Emlt.NN.NeuronWorker do
 
     if sigmoid(signal_neuron) == 1 do
       Enum.each(neuron.outbound_connections, fn oc ->
-        [n_in, n_out] = oc.key
-
         %{
-          n_out: n_out,
-          n_in: n_in,
+          key: oc.key,
+          weight: oc.weight,
           signal: 1
         }
-        |> Emlt.NN.Neuron.signal()
+        |> nc_insert()
       end)
 
       _neuron =
@@ -103,7 +80,7 @@ defmodule Emlt.NN.NeuronWorker do
           weight: inc.weight,
           signal: 0
         }
-        |> NeuronConnection.update()
+        |> nc_insert()
       end)
     else
       _neuron =
@@ -114,4 +91,46 @@ defmodule Emlt.NN.NeuronWorker do
   end
 
   # ====================== End Learn section ========================
+  def preload_inbound_connections(neuron) do
+    list = nc_find({[:_, {neuron.x, neuron.y, neuron.z}], :_})
+    inbound_connections = list |> Enum.map(fn inc -> elem(inc, 1) end)
+
+    neuron |> Map.merge(%{inbound_connections: inbound_connections})
+  end
+
+  def preload_outbound_connections(neuron) do
+    list = nc_find({[{neuron.x, neuron.y, neuron.z}, :_], :_})
+    outbound_connections = list |> Enum.map(fn inc -> elem(inc, 1) end)
+
+    neuron |> Map.merge(%{outbound_connections: outbound_connections})
+  end
+
+  # === Storage ===
+  def neuron_insert(opts) do
+    :ets.insert(
+      :neurons,
+      {{opts.x, opts.y, opts.z}, opts}
+    )
+  end
+
+  def nc_insert(opts) do
+    :ets.insert(:neuron_connections, {opts.key, opts})
+  end
+
+  def neuron_get(opts) do
+    {_key, neuron} = :ets.lookup(:neurons, opts) |> hd
+    neuron
+  end
+
+  def nc_get(opts) do
+    :ets.lookup(:neuron_connections, opts)
+  end
+
+  def neurons_find(opts) do
+    :ets.match_object(:neurons, opts)
+  end
+
+  def nc_find(opts) do
+    :ets.match_object(:neuron_connections, opts)
+  end
 end

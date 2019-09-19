@@ -1,4 +1,6 @@
 defmodule Emlt.Interfaces.Matrix do
+  alias Emlt.NN.{Neuron, NeuronConnection}
+
   def learn(matrix, value) do
     IO.puts("learn nn for #{value}")
     {rows, cols} = Matrex.size(matrix)
@@ -8,61 +10,72 @@ defmodule Emlt.Interfaces.Matrix do
         if(matrix[x][y] > 0) do
           color_value = matrix[x][y]
 
-          spawn(Emlt.NN.Neuron, :signal, [
-            %{
-              n_out: {x, y, 1},
-              n_in: {0, 0, 0},
-              signal: color_value
-            }
-          ])
+          %{
+            key: [{0, 0, 0}, {x, y, 1}],
+            weight: 10,
+            signal: color_value
+          }
+          |> NeuronConnection.update()
         end
       end)
     end)
 
-    # Process.sleep(200)
-
-    # _out_correct =
-    #   Eml.NN.Layer.get(3)
-    #   |> Enum.filter(fn x -> x.attr.x == value |> String.to_integer() end)
-    #   |> Enum.each(fn n ->
-    #     Eml.NN.Neuron.change_weight({n.attr.x, n.attr.y, 3}, "up")
-    #     Process.sleep(200)
-    #   end)
-
-    # _out_incorrect =
-    #   Eml.NN.Layer.get(3)
-    #   |> Enum.filter(fn x -> x.attr.x != value |> String.to_integer() end)
-    #   |> Enum.each(fn n ->
-    #     Eml.NN.Neuron.change_weight({n.attr.x, n.attr.y, 3}, "down")
-    #     Process.sleep(200)
-    #   end)
-
-    # Mix.Shell.IO.yes?("Clear?")
-
-    # Enum.each(1..3, fn z ->
-    #   Eml.NN.Layer.get(z)
-    #   |> Enum.each(fn n ->
-    #     Eml.NN.Neuron.clear_signal({n.attr.x, n.attr.y, z})
-    #     Process.sleep(200)
+    # :timer.sleep(3000)
+    # IO.puts "Processing layer 1 "
+    # Enum.each(1..cols |> Enum.with_index(1), fn {_row, x} ->
+    #   Enum.each(1..rows |> Enum.with_index(1), fn {_cell, y} ->
+    #     if(matrix[x][y] > 0) do
+    #       Emlt.NN.Neuron.signal({x, y, 1})
+    #     end
     #   end)
     # end)
+
+    # :timer.sleep(3000)
+    # IO.puts "Processing layer 2 "
+    # for x <- 1..28,
+    #     y <- 1..28,
+    #     do: Emlt.NN.Neuron.signal({x, y, 2})
+
+    # :timer.sleep(3000)
+    # IO.puts "Processing layer 3 "
+    # for x <- 1..9,
+    #     do: Emlt.NN.Neuron.signal({x, 1, 3})
+
+    IO.puts("Processing layer 1 ")
+    tasks = prepare_neurons_for_layer(1)
+    tasks_with_results = Task.yield_many(tasks, :infinity)
+    # IO.inspect(tasks_with_results)
+    IO.puts("Processing layer 2 ")
+    tasks = prepare_neurons_for_layer(2)
+    tasks_with_results = Task.yield_many(tasks, :infinity)
+    # IO.inspect(tasks_with_results)
+    IO.puts("Processing layer 3 ")
+    tasks = prepare_neurons_for_last_layer(3)
+    tasks_with_results = Task.yield_many(tasks, :infinity)
+    # IO.inspect(tasks_with_results)
+    Emlt.NN.Layer.get(3) |> IO.inspect()
+    Emlt.NN.Layer.get_activated(3) |> IO.inspect()
+    :ok
   end
 
-  # def check(matrix) do
-  #   matrix |> Matrex.heatmap()
-  #   {rows, cols} = Matrex.size(matrix)
+  def prepare_neurons_for_layer(z) do
+    for i <- 1..28,
+        j <- 1..28,
+        into: [],
+        # {i, j, z}
+        do:
+          Task.async(Emlt.NN.NeuronRunner, :signal, [
+            {i, j, z}
+          ])
+  end
 
-  #   Enum.each(1..cols |> Enum.with_index(1), fn {_row, x} ->
-  #     Enum.each(1..rows |> Enum.with_index(1), fn {_cell, y} ->
-  #       if(matrix[x][y] > 0) do
-  #         color_value = matrix[x][y] |> Float.to_string()
-  #         Eml.NN.Neuron.signal({x, y, 1}, {1, 1}, color_value)
-  #       end
-  #     end)
-  #   end)
-
-  #   Eml.NN.Layer.get(4) |> IO.inspect()
-  #   Mix.Shell.IO.yes?("Continue?")
-  #   Eml.NN.Layer.flush(4)
-  # end
+  def prepare_neurons_for_last_layer(z) do
+    for x <- 1..9,
+        into: [],
+        # {i, j, z}
+        do:
+          Task.async(Emlt.NN.NeuronRunner, :signal, [
+            {x, 1, z}
+          ])
+  end
 end

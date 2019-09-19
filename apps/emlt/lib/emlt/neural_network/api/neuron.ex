@@ -3,8 +3,7 @@ defmodule Emlt.NN.Neuron do
     This is Api for neuron module
   """
   alias Emlt.NN.{Neuron, Network, NeuronConnection, Storage}
-
-  
+  @pool_name :neuron_worker_pool
 
   def preload_inbound_connections(neuron) do
     list = Storage.match_nc({[:_, {neuron.x, neuron.y, neuron.z}], :_})
@@ -14,14 +13,10 @@ defmodule Emlt.NN.Neuron do
   end
 
   def preload_outbound_connections(neuron) do
-    next_layers =
-      case neuron.z do
-        3 -> []
-        2 -> get_last_layers(neuron.x, neuron.y, neuron.z)
-        _ -> get_next_layers(neuron.x, neuron.y, neuron.z)
-      end
+    list = Storage.match_nc({[{neuron.x, neuron.y, neuron.z}, :_], :_})
+    outbound_connections = list |> Enum.map(fn inc -> elem(inc, 1) end)
 
-    neuron |> Map.merge(%{outbound_connections: next_layers})
+    neuron |> Map.merge(%{outbound_connections: outbound_connections})
   end
 
   def insert(opts) do
@@ -45,23 +40,18 @@ defmodule Emlt.NN.Neuron do
     case op do
       :call ->
         :poolboy.transaction(
-          get_pool_name(opts),
+          @pool_name,
           fn pid -> GenServer.call(pid, {command_name, opts}) end,
           :infinity
         )
 
       :cast ->
         :poolboy.transaction(
-          get_pool_name(opts),
+          @pool_name,
           fn pid -> GenServer.cast(pid, {command_name, opts}) end,
           :infinity
         )
     end
-  end
-
-  def get_pool_name(opts) do
-    {_x, _y, z} = opts.n_out
-    "neuron_worker_pool_#{z}" |> String.to_atom()
   end
 
   def get_next_layers(x, y, z) do
