@@ -23,7 +23,7 @@ defmodule Emlt.MixProject do
   def application do
     [
       mod: {Emlt.Application, []},
-      extra_applications: [:logger, :runtime_tools, :poolboy]
+      extra_applications: [:logger, :runtime_tools]
     ]
   end
 
@@ -36,7 +36,6 @@ defmodule Emlt.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [ 
-      {:poolboy, "~> 1.5.1"},
       {:matrex, "~> 0.6"},
       {:csv, "~> 2.0.0"},
       {:math, "~> 0.3.0"},

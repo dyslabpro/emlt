@@ -1,81 +1,77 @@
 defmodule Emlt.Interfaces.Matrix do
-  alias Emlt.NN.{Neuron, NeuronConnection}
+  alias Emlt.NN.{Neuron, Layer}
 
-  def learn(matrix, value) do
+  def learn(layer_in, value) do
     IO.puts("learn nn for #{value}")
-    {rows, cols} = Matrex.size(matrix)
 
-    Enum.each(1..cols |> Enum.with_index(1), fn {_row, x} ->
-      Enum.each(1..rows |> Enum.with_index(1), fn {_cell, y} ->
-        if(matrix[x][y] > 0) do
-          color_value = matrix[x][y]
-
-          %{
-            key: [{0, 0, 0}, {x, y, 1}],
-            weight: 10,
-            signal: color_value
-          }
-          |> NeuronConnection.update()
-        end
-      end)
-    end)
-
-    # :timer.sleep(3000)
-    # IO.puts "Processing layer 1 "
-    # Enum.each(1..cols |> Enum.with_index(1), fn {_row, x} ->
-    #   Enum.each(1..rows |> Enum.with_index(1), fn {_cell, y} ->
-    #     if(matrix[x][y] > 0) do
-    #       Emlt.NN.Neuron.signal({x, y, 1})
-    #     end
-    #   end)
-    # end)
-
-    # :timer.sleep(3000)
-    # IO.puts "Processing layer 2 "
-    # for x <- 1..28,
-    #     y <- 1..28,
-    #     do: Emlt.NN.Neuron.signal({x, y, 2})
-
-    # :timer.sleep(3000)
-    # IO.puts "Processing layer 3 "
-    # for x <- 1..9,
-    #     do: Emlt.NN.Neuron.signal({x, 1, 3})
-
-    IO.puts("Processing layer 1 ")
-    tasks = prepare_neurons_for_layer(1)
-    tasks_with_results = Task.yield_many(tasks, :infinity)
-    # IO.inspect(tasks_with_results)
     IO.puts("Processing layer 2 ")
-    tasks = prepare_neurons_for_layer(2)
-    tasks_with_results = Task.yield_many(tasks, :infinity)
-    # IO.inspect(tasks_with_results)
+    tasks = call_to_layer(2, layer_in)
+    Task.yield_many(tasks, :infinity)
+
+    layer_hidden = Layer.get_matrix_from_layer(2)
+
     IO.puts("Processing layer 3 ")
-    tasks = prepare_neurons_for_last_layer(3)
-    tasks_with_results = Task.yield_many(tasks, :infinity)
-    # IO.inspect(tasks_with_results)
-    Emlt.NN.Layer.get(3) |> IO.inspect()
-    Emlt.NN.Layer.get_activated(3) |> IO.inspect()
+    tasks = call_to_layer_last_layer(3, layer_hidden)
+    Task.yield_many(tasks, :infinity)
+    Layer.inspect(3)
+
+    IO.puts("Change weights for layer 3 ")
+    tasks = change_weight_in_last_layer(3, layer_hidden, value)
+    Task.yield_many(tasks, :infinity)
+
+    Layer.inspect(3)
+
+    Emlt.NN.Network.to_start()
     :ok
   end
 
-  def prepare_neurons_for_layer(z) do
+  def call_to_layer(z, layer) do
     for i <- 1..28,
         j <- 1..28,
         into: [],
         # {i, j, z}
         do:
-          Task.async(Emlt.NN.NeuronRunner, :signal, [
-            {i, j, z}
+          Task.async(Neuron, :signal, [
+            {i, j, z},
+            layer
           ])
   end
 
-  def prepare_neurons_for_last_layer(z) do
+  def call_to_layer_last_layer(z, layer) do
     for x <- 1..9,
         into: [],
         # {i, j, z}
         do:
-          Task.async(Emlt.NN.NeuronRunner, :signal, [
-            {x, 1, z}
+          Task.async(Neuron, :signal, [
+            {x, 1, z},
+            layer
           ])
+  end
+
+  def change_weight_in_last_layer(z, layer, value) do
+    tasks1 =
+      Layer.get_not_correct_activated_neyrons(z, value)
+      |> Enum.map(fn neuron ->
+        Task.async(Neuron, :change_weight, [neuron.key, layer, -0.25])
+      end)
+
+    tasks2 =
+      case Layer.get_correct_activated_neyrons(z, value) do
+        [] ->
+          [Task.async(Neuron, :change_weight, [{value, 1, 3}, layer, 0.25])]
+
+        _ ->
+          []
+      end
+
+    tasks1 ++ tasks2
+  end
+
+  def get_delta(x, value) do
+    if x == value do
+      0.25
+    else
+      -0.25
+    end
   end
 end
