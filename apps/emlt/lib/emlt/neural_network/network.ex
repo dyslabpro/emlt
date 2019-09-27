@@ -3,42 +3,58 @@ defmodule Emlt.NN.Network do
 
   alias Emlt.NN.{Neuron}
 
-  @doc """
-  Запуск и линковка нашей очереди. Это вспомогательный метод.
-  """
   def start_link(state \\ []) do
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
-  @doc """
-  Функция обратного вызова для GenServer.init/1
-  """
   def init(state) do
-    init_data(0, 9, 1, 1, 3)
-    init_data(1, 28, 1, 28, 2)
+    layers = Application.fetch_env!(:emlt, :nn_layers)
+
+    layers
+    |> Enum.each(fn layer ->
+      init_layer(layer)
+    end)
 
     {:ok, state}
   end
 
-  defp init_data(x_start, x_end, y_start, y_end, z) do
-    for x <- x_start..x_end,
-        y <- y_start..y_end,
-        do: init_data_neuron(x, y, z)
+  defp init_layer(layer) do
+    {xm, ym} = layer.size
+
+    list_of_neurons =
+      for x <- 1..xm,
+          y <- 1..ym,
+          into: [],
+          do: init_data_neuron({x, y, layer.z_index}, layer)
+
+    list_of_neurons =
+      case layer.role do
+        "out" -> Enum.zip(list_of_neurons, layer.targets)
+        _ -> list_of_neurons
+      end
+    
+    list_of_neurons
+    |> Enum.each(fn neuron ->
+      neuron |> Neuron.insert()
+    end)
   end
 
-  defp init_data_neuron(x, y, z) do
-    nc = Matrex.new(28, 28, fn -> Enum.random(-14..14) end) |> Matrex.to_list_of_lists()
+  defp init_data_neuron({x, y, z}, layer) do
+    nc =
+      Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) / 10 end)
+      |> Matrex.to_list_of_lists()
 
     %{
       key: {x, y, z},
       x: x,
       y: y,
       z: z,
-      activated_value: 0,
-      current_value: 0,
-      nc: nc
+      signal: 0,
+      activated: 0,
+      delta: 0,
+      nc: nc,
+      target: "NULL"
     }
-    |> Neuron.insert()
   end
 
   def to_start do
@@ -53,5 +69,15 @@ defmodule Emlt.NN.Network do
       end)
 
     Task.yield_many(tasks, :infinity)
+  end
+
+  def config_data(key, z) do
+    layers =
+      Application.fetch_env!(:emlt, :nn_layers)
+      |> Enum.filter(fn l ->
+        l.z_index == z
+      end)
+      |> hd
+      |> Map.fetch!(key)
   end
 end

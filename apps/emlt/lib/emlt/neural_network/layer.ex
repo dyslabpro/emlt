@@ -13,7 +13,7 @@ defmodule Emlt.NN.Layer do
     layer
     |> Layer.get_neyrons()
     |> Enum.filter(fn n ->
-      n.activated_value > 0
+      n.activated == 1
     end)
   end
 
@@ -33,30 +33,20 @@ defmodule Emlt.NN.Layer do
     end)
   end
 
-  def insert(opts) do
-    :ets.insert(
-      :layers,
-      {opts.layer, opts}
-    )
-  end
-
-  def get(opts) do
-    {_key, layer} = :ets.lookup(:layers, opts) |> hd
-    layer
-  end
-
   def get_matrix_from_layer(layer) do
+    {w, _h} = Emlt.NN.Network.config_data(:size, layer)
+
     layer
     |> get_neyrons()
     |> Enum.sort(&(get_x(&1) <= get_x(&2)))
     |> Enum.sort(&(get_y(&1) <= get_y(&2)))
     |> Enum.map(fn n ->
-      case n.activated_value do
+      case n.activated do
         0 -> 0
         _ -> 1
       end
     end)
-    |> Enum.chunk_every(28)
+    |> Enum.chunk_every(w)
     |> Matrex.new()
   end
 
@@ -70,10 +60,10 @@ defmodule Emlt.NN.Layer do
 
   def inspect(z) do
     z
-    |> Layer.get_activated_neyrons()
+    |> Layer.get_neyrons()
     |> Enum.map(fn n ->
       Neuron.format(n, :short)
     end)
-    |> IO.inspect
+    |> IO.inspect()
   end
 end

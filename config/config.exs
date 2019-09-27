@@ -9,8 +9,6 @@
 # move said applications out of the umbrella.
 use Mix.Config
 
-
-
 config :emlt_web,
   generators: [context_app: :emlt]
 
@@ -32,3 +30,25 @@ config :phoenix, :json_library, Jason
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
+
+config :emlt,
+  nn_layers: [
+    %{
+      size: {17, 17},
+      size_nc: 28,
+      nc_weights: -50..50,
+      z_index: 2,
+      targets: nil,
+      role: "hidden",
+      rate: 0.001
+    },
+    %{
+      size: {1, 10},
+      size_nc: 17,
+      nc_weights: -50..50,
+      z_index: 3,
+      targets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      role: "out",
+      rate: 0.001
+    }
+  ]
