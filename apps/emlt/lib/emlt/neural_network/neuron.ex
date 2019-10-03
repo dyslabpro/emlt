@@ -1,30 +1,26 @@
 defmodule Emlt.NN.Neuron do
-  def signal(n_attr, layer_prev, layer_conf) do
+  alias Emlt.NN.{Neuron}
+
+  def signal(n_attr, layer_prev, _layer_conf) do
     neuron =
       n_attr
       |> get()
 
     signal_neuron =
       neuron.nc
-      |> Matrex.new()
       |> Matrex.apply(layer_prev, fn w, s ->
-        case s do
-          0 -> 0
-          _n -> w
-        end
+        w * s
       end)
       |> Matrex.sum()
 
-    neuron =
-      neuron
-      |> Map.merge(%{signal: signal_neuron})
-      |> update()
+    out = sigmoid(signal_neuron)
 
-    if sigmoid(signal_neuron) == 1 do
-      neuron
-      |> Map.merge(%{activated: 1})
-      |> update
-    end
+    neuron
+    |> Map.merge(%{
+      signal: signal_neuron,
+      out: out
+    })
+    |> Neuron.update()
 
     {:reply, :ok}
   end
@@ -37,9 +33,9 @@ defmodule Emlt.NN.Neuron do
     if layer_conf.role == "out" do
       delta =
         if neuron.target == target do
-          37 - neuron.signal
+          1 - neuron.out
         else
-          0 - neuron.signal
+          0 - neuron.out
         end
 
       neuron
@@ -50,8 +46,7 @@ defmodule Emlt.NN.Neuron do
         layer_next
         |> Enum.reduce(0, fn n, acc ->
           w =
-            neuron.nc
-            |> Matrex.new()
+            n.nc
             |> Matrex.at(neuron.x, neuron.y)
 
           w * n.delta + acc
@@ -63,10 +58,6 @@ defmodule Emlt.NN.Neuron do
     end
   end
 
-  def weight(w, rate, delta) do
-    w + delta * rate
-  end
-
   def change_weight(n_attr, layer_prev, layer_conf) do
     neuron =
       n_attr
@@ -76,85 +67,23 @@ defmodule Emlt.NN.Neuron do
 
     neuron_nc =
       neuron.nc
-      |> Matrex.new()
       |> Matrex.apply(layer_prev, fn w, s ->
-        case s do
-          0 -> w
-          _n -> w + delta
-        end
-      end)
-      |> Matrex.to_list_of_lists()
+        #loss = loss(s)
+        new_weight = w + (delta * s)
+        #IO.puts "#{neuron.x} #{neuron.y} #{neuron.z} delta: #{neuron.delta}, s: #{s}, new_weight: #{new_weight}, old_w: #{w}"
+        new_weight
+        end)
 
     neuron
     |> Map.merge(%{nc: neuron_nc})
     |> update()
   end
 
-  def change_weight1(n_attr, layer_prev, target, layer_conf) do
-    # 37 
-    neuron =
-      n_attr
-      |> get()
-
-    if(layer_conf.role == "hidden") do
-      neuron_nc =
-        neuron.nc
-        |> Matrex.new()
-        |> Matrex.apply(layer_prev, fn w, s ->
-          case s do
-            0 -> w
-            _n -> w + 0.01
-          end
-        end)
-        |> Matrex.to_list_of_lists()
-
-      neuron
-      |> Map.merge(%{nc: neuron_nc})
-      |> update()
-    else
-      delta =
-        if neuron.target == target do
-          if neuron.activated_value > 0 do
-            0
-          else
-            0.01
-          end
-        else
-          if neuron.activated_value > 0 do
-            -0.01
-          else
-            0
-          end
-        end
-
-      {x, y, z} = n_attr
-      IO.puts("delta #{delta} for #{x}, #{y}, #{z} target- #{neuron.target}")
-
-      neuron_nc =
-        neuron.nc
-        |> Matrex.new()
-        |> Matrex.apply(layer_prev, fn w, s ->
-          case s do
-            0.0 ->
-              w
-
-            _n ->
-              w + delta
-          end
-        end)
-        |> Matrex.to_list_of_lists()
-
-      neuron
-      |> Map.merge(%{nc: neuron_nc})
-      |> update()
-    end
-  end
-
   def to_start(n_attr) do
     neuron =
       n_attr
       |> get()
-      |> Map.merge(%{signal: 0, delta: 0, activated: 0})
+      |> Map.merge(%{signal: 0, delta: 0, out: 0})
       |> update()
   end
 
@@ -165,7 +94,7 @@ defmodule Emlt.NN.Neuron do
       y: neuron.y,
       z: neuron.z,
       target: neuron.target,
-      activated: neuron.activated,
+      out: neuron.out,
       signal: neuron.signal,
       delta: neuron.delta,
       nc: neuron.nc
@@ -181,6 +110,10 @@ defmodule Emlt.NN.Neuron do
       x < -100 -> 0
       true -> 1 / (1 + :math.exp(-x))
     end
+  end
+
+  def loss(out) do
+    out * (1 - out)
   end
 
   # === Storage ===
@@ -208,20 +141,7 @@ defmodule Emlt.NN.Neuron do
     :ets.match_object(:neurons, opts)
   end
 
-  def get_activated_value(neuron) do
-    {_key, n} = neuron
-    n.activated_value
-  end
-
-  def activated(neuron) do
-    {_key, n} = neuron
-
-    if n.activated == 1 do
-      true
-    else
-      nil
-    end
-  end
+  
 
   def format(neuron, format) do
     target =
@@ -235,7 +155,7 @@ defmodule Emlt.NN.Neuron do
       :short ->
         %{
           key: neuron.key,
-          activated: neuron.activated,
+          out: neuron.out,
           signal: neuron.signal,
           delta: neuron.delta,
           target: target
@@ -243,6 +163,9 @@ defmodule Emlt.NN.Neuron do
 
       :full ->
         neuron
+
+      :line ->
+        %{out: neuron.out, target: target  } 
     end
   end
 end

@@ -41,8 +41,8 @@ defmodule Emlt.NN.Network do
 
   defp init_data_neuron({x, y, z}, layer) do
     nc =
-      Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) / 10 end)
-      |> Matrex.to_list_of_lists()
+      Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) end)
+      
 
     %{
       key: {x, y, z},
@@ -50,7 +50,7 @@ defmodule Emlt.NN.Network do
       y: y,
       z: z,
       signal: 0,
-      activated: 0,
+      out: 0,
       delta: 0,
       nc: nc,
       target: "NULL"
@@ -60,9 +60,6 @@ defmodule Emlt.NN.Network do
   def to_start do
     tasks =
       :ets.match_object(:neurons, {{:_, :_, :_}, :_})
-      |> Enum.filter(fn n ->
-        Neuron.activated(n)
-      end)
       |> Enum.map(fn neuron ->
         {key, _n} = neuron
         Task.async(Neuron, :to_start, [key])

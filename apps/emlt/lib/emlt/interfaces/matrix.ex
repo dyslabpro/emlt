@@ -2,13 +2,22 @@ defmodule Emlt.Interfaces.Matrix do
   alias Emlt.NN.{Neuron, Layer}
 
   def learn(layer_in, target) do
+    layer_in =
+      layer_in
+      |> Matrex.apply(fn val ->
+        case val do
+          0.0 -> 0
+          _ -> 1
+        end
+      end)
+
+    #IO.inspect(layer_in)
     IO.puts("learn NN for #{target}")
 
     layers_conf = Application.fetch_env!(:emlt, :nn_layers)
-
+    # ============================== Signal ==============================
     layers_conf
     |> Enum.each(fn layer_conf ->
-
       layer_prev =
         case layer_conf.z_index do
           2 -> layer_in
@@ -19,10 +28,10 @@ defmodule Emlt.Interfaces.Matrix do
       Task.yield_many(tasks, :infinity)
     end)
 
+    # ============================== Delta ==============================
     layers_conf
     |> Enum.reverse()
     |> Enum.each(fn layer_conf ->
-
       layer_next =
         case layer_conf.z_index do
           3 -> []
@@ -33,11 +42,10 @@ defmodule Emlt.Interfaces.Matrix do
       Task.yield_many(tasks, :infinity)
     end)
 
+    # ============================== weight ==============================
     layers_conf
     |> Enum.reverse()
     |> Enum.each(fn layer_conf ->
-
-
       layer_prev =
         case layer_conf.z_index do
           2 -> layer_in
@@ -47,8 +55,6 @@ defmodule Emlt.Interfaces.Matrix do
       tasks = call_to_layer_weight(layer_conf, layer_prev)
       Task.yield_many(tasks, :infinity)
     end)
-
- 
 
     Layer.inspect(3)
     Emlt.NN.Network.to_start()
@@ -97,8 +103,6 @@ defmodule Emlt.Interfaces.Matrix do
             layer_conf
           ])
   end
-  
-  
 
   def get_delta(x, value) do
     if x == value do

@@ -9,29 +9,7 @@ defmodule Emlt.NN.Layer do
     end)
   end
 
-  def get_activated_neyrons(layer) do
-    layer
-    |> Layer.get_neyrons()
-    |> Enum.filter(fn n ->
-      n.activated == 1
-    end)
-  end
 
-  def get_correct_activated_neyrons(layer, value) do
-    layer
-    |> Layer.get_activated_neyrons()
-    |> Enum.filter(fn n ->
-      n.x == value
-    end)
-  end
-
-  def get_not_correct_activated_neyrons(layer, value) do
-    layer
-    |> Layer.get_activated_neyrons()
-    |> Enum.filter(fn n ->
-      n.x != value
-    end)
-  end
 
   def get_matrix_from_layer(layer) do
     {w, _h} = Emlt.NN.Network.config_data(:size, layer)
@@ -41,10 +19,21 @@ defmodule Emlt.NN.Layer do
     |> Enum.sort(&(get_x(&1) <= get_x(&2)))
     |> Enum.sort(&(get_y(&1) <= get_y(&2)))
     |> Enum.map(fn n ->
-      case n.activated do
-        0 -> 0
-        _ -> 1
-      end
+      n.out
+    end)
+    |> Enum.chunk_every(w)
+    |> Matrex.new()
+  end
+
+  def get_matrix_from_layer_with_signal(layer) do
+    {w, _h} = Emlt.NN.Network.config_data(:size, layer)
+
+    layer
+    |> get_neyrons()
+    |> Enum.sort(&(get_x(&1) <= get_x(&2)))
+    |> Enum.sort(&(get_y(&1) <= get_y(&2)))
+    |> Enum.map(fn n ->
+      n.signal
     end)
     |> Enum.chunk_every(w)
     |> Matrex.new()
@@ -58,12 +47,28 @@ defmodule Emlt.NN.Layer do
     n.y
   end
 
+  def get(n, key) do
+    Map.fetch(n, key)
+  end
+
   def inspect(z) do
     z
     |> Layer.get_neyrons()
+    |> Enum.sort(&(get(&2, :out) <= get(&1, :out)))
     |> Enum.map(fn n ->
-      Neuron.format(n, :short)
+      Neuron.format(n, :line)
     end)
     |> IO.inspect()
   end
+
+  # def call(task, opts) do
+  #   {xm, ym} = layer_conf.size
+
+  #   for i <- 1..xm,
+  #       j <- 1..ym,
+  #       into: [],
+  #       do:
+  #         opts = [{i, j, layer_conf.z_index} | opts]
+  #         Task.async(Neuron, task, opts)
+  # end
 end

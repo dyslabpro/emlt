@@ -36,19 +36,19 @@ config :emlt,
     %{
       size: {17, 17},
       size_nc: 28,
-      nc_weights: -50..50,
+      nc_weights: -5..5,
       z_index: 2,
       targets: nil,
       role: "hidden",
-      rate: 0.001
+      rate: 0.1
     },
     %{
       size: {1, 10},
       size_nc: 17,
-      nc_weights: -50..50,
+      nc_weights: -5..5,
       z_index: 3,
       targets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
       role: "out",
-      rate: 0.001
+      rate: 0.1
     }
   ]

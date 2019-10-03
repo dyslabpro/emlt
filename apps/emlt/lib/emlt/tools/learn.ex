@@ -13,7 +13,7 @@ defmodule Emlt.Tools.Learn do
     |> Path.expand(__DIR__)
     |> File.stream!()
     |> CSV.decode!()
-    #|> Enum.take(take)
+    |> Enum.take(take)
     |> Enum.each(fn x ->
       dest = List.first(x)
 
@@ -30,6 +30,7 @@ defmodule Emlt.Tools.Learn do
         # Matrix.learn(matrix, dest)
         {uSecs, :ok} = :timer.tc(Matrix, :learn, [matrix, dest])
         IO.inspect(uSecs)
+
       end
     end)
   end
