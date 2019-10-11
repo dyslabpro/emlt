@@ -8,12 +8,18 @@ defmodule Emlt.NN.Network do
   end
 
   def init(state) do
-    layers = Application.fetch_env!(:emlt, :nn_layers)
+    case Application.fetch_env!(:emlt, :mode) do
+      :learn ->
+        Application.fetch_env!(:emlt, :nn_layers)
+        |> Enum.each(fn layer ->
+          init_layer(layer)
+        end)
 
-    layers
-    |> Enum.each(fn layer ->
-      init_layer(layer)
-    end)
+      :test ->
+        backup = Application.fetch_env!(:emlt, :backup)
+        :dets.open_file(backup, type: :set)
+        :ets.from_dets(:neurons, backup)
+    end
 
     {:ok, state}
   end
@@ -32,7 +38,7 @@ defmodule Emlt.NN.Network do
         "out" -> Enum.zip(list_of_neurons, layer.targets)
         _ -> list_of_neurons
       end
-    
+
     list_of_neurons
     |> Enum.each(fn neuron ->
       neuron |> Neuron.insert()
@@ -40,9 +46,7 @@ defmodule Emlt.NN.Network do
   end
 
   defp init_data_neuron({x, y, z}, layer) do
-    nc =
-      Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) end)
-      
+    nc = Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) end)
 
     %{
       key: {x, y, z},

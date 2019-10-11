@@ -61,6 +61,14 @@ defmodule Emlt.NN.Layer do
     |> IO.inspect()
   end
 
+  def get_res(z) do
+    z
+    |> Layer.get_neyrons()
+    |> Enum.sort(&(get(&2, :out) <= get(&1, :out)))
+    |> hd
+    |> Map.fetch!(:target)
+  end
+
   # def call(task, opts) do
   #   {xm, ym} = layer_conf.size
 
