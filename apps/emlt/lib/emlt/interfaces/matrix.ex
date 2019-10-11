@@ -105,13 +105,7 @@ defmodule Emlt.Interfaces.Matrix do
           ])
   end
 
-  def get_delta(x, value) do
-    if x == value do
-      0.25
-    else
-      -0.25
-    end
-  end
+
 
   def check(layer_in) do
     layer_in =

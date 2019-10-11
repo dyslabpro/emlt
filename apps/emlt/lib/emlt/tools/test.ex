@@ -34,16 +34,16 @@ defmodule Emlt.Tools.Test do
           |> Enum.chunk_every(28)
           |> Matrex.new()
 
-        # Matrex.heatmap(matrix)
-        res = Matrix.check(matrix)
+        Matrex.heatmap(matrix)
+        res = Matrix.check(matrix) |> IO.puts
 
-        out =
-          [[i, res]]
-          |> CSV.encode()
-          |> Enum.take(1)
-          |> hd
+        # out =
+        #   [[i, res]]
+        #   |> CSV.encode()
+        #   |> Enum.take(1)
+        #   |> hd
 
-        IO.write(file, out)
+        # IO.write(file, out)
       end
     end)
 

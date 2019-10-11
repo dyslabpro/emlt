@@ -12,7 +12,6 @@ defmodule Emlt.Application do
 
 
     children = [
-
       Emlt.NN.Network
     ]
 
