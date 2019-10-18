@@ -1,14 +1,38 @@
 defmodule Emlt.NN.Neuron do
+  @moduledoc """
+  Это хорошая документация.
+  """
+  
   alias Emlt.NN.{Neuron}
 
-  def signal(n_attr, layer_prev, _layer_conf) do
+  def init({x, y, z}, layer_config) do
+    nc =
+      Matrex.new(layer_config.size_nc, layer_config.size_nc, fn ->
+        Enum.random(layer_config.nc_weights)
+      end)
+
+    %{
+      key: {x, y, z},
+      table: layer_config.table,
+      x: x,
+      y: y,
+      z: z,
+      signal: 0,
+      out: 0,
+      delta: 0,
+      nc: nc,
+      target: "NULL"
+    }
+  end
+
+  def signal(%{n_attr: n_attr, conf: conf, prev: prev} = _opts) do
     neuron =
       n_attr
-      |> get()
+      |> get(conf.table)
 
     signal_neuron =
       neuron.nc
-      |> Matrex.apply(layer_prev, fn w, s ->
+      |> Matrex.apply(prev, fn w, s ->
         w * s
       end)
       |> Matrex.sum()
@@ -25,12 +49,12 @@ defmodule Emlt.NN.Neuron do
     {:reply, :ok}
   end
 
-  def delta(n_attr, layer_conf, layer_next, target) do
+  def delta(%{n_attr: n_attr, conf: conf, next: next, target: target} = _opts) do
     neuron =
       n_attr
-      |> get()
+      |> get(conf.table)
 
-    if layer_conf.role == "out" do
+    if conf.role == "out" do
       delta =
         if neuron.target == target do
           1 - neuron.out
@@ -43,7 +67,7 @@ defmodule Emlt.NN.Neuron do
       |> update()
     else
       delta =
-        layer_next
+        next
         |> Enum.reduce(0, fn n, acc ->
           w =
             n.nc
@@ -58,31 +82,32 @@ defmodule Emlt.NN.Neuron do
     end
   end
 
-  def change_weight(n_attr, layer_prev, layer_conf) do
+  def change_weight(%{n_attr: n_attr, conf: conf, prev: prev} = _opts) do
     neuron =
       n_attr
-      |> get()
+      |> get(conf.table)
 
-    delta = neuron.delta * layer_conf.rate
+    delta = neuron.delta * conf.rate
 
     neuron_nc =
       neuron.nc
-      |> Matrex.apply(layer_prev, fn w, s ->
-        #loss = loss(s)
-        new_weight = w + (delta * s)
-        #IO.puts "#{neuron.x} #{neuron.y} #{neuron.z} delta: #{neuron.delta}, s: #{s}, new_weight: #{new_weight}, old_w: #{w}"
+      |> Matrex.apply(prev, fn w, s ->
+        # loss = loss(s)
+        new_weight = w + delta * s
+
+        # IO.puts "#{neuron.x} #{neuron.y} #{neuron.z} delta: #{neuron.delta}, s: #{s}, new_weight: #{new_weight}, old_w: #{w}"
         new_weight
-        end)
+      end)
 
     neuron
     |> Map.merge(%{nc: neuron_nc})
     |> update()
   end
 
-  def to_start(n_attr) do
+  def to_start(n_attr, conf) do
     neuron =
       n_attr
-      |> get()
+      |> get(conf.table)
       |> Map.merge(%{signal: 0, delta: 0, out: 0})
       |> update()
   end
@@ -90,6 +115,7 @@ defmodule Emlt.NN.Neuron do
   def update(neuron) do
     %{
       key: neuron.key,
+      table: neuron.table,
       x: neuron.x,
       y: neuron.y,
       z: neuron.z,
@@ -119,7 +145,7 @@ defmodule Emlt.NN.Neuron do
   # === Storage ===
   def insert(opts) when is_map(opts) do
     :ets.insert(
-      :neurons,
+      opts.table,
       {{opts.x, opts.y, opts.z}, opts}
     )
   end
@@ -132,16 +158,14 @@ defmodule Emlt.NN.Neuron do
     |> insert()
   end
 
-  def get(opts) do
-    {_key, neuron} = :ets.lookup(:neurons, opts) |> hd
+  def get(opts, table) do
+    {_key, neuron} = :ets.lookup(table, opts) |> hd
     neuron
   end
 
   def find(opts) do
     :ets.match_object(:neurons, opts)
   end
-
-  
 
   def format(neuron, format) do
     target =
@@ -165,7 +189,7 @@ defmodule Emlt.NN.Neuron do
         neuron
 
       :line ->
-        %{out: neuron.out, target: target  } 
+        %{out: neuron.out, target: target}
     end
   end
 end

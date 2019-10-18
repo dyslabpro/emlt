@@ -9,6 +9,8 @@
 # move said applications out of the umbrella.
 use Mix.Config
 
+import_config "../apps/*/config/config.exs"
+
 config :emlt_web,
   generators: [context_app: :emlt]
 

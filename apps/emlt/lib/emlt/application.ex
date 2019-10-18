@@ -6,13 +6,10 @@ defmodule Emlt.Application do
   use Application
 
   def start(_type, _args) do
-    import Supervisor.Spec, warn: false
-    _neurons = :ets.new(:neurons, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
-    _layers = :ets.new(:layers, [:set, :public, :named_table, read_concurrency: true, write_concurrency: true])
+    import Supervisor.Spec, warn: false 
+    
 
-
-    children = [
-      Emlt.NN.Network
+    children = [      
     ]
 
     Supervisor.start_link(children, strategy: :one_for_one, name: Emlt.Supervisor)

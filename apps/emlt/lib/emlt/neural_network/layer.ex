@@ -1,21 +1,44 @@
 defmodule Emlt.NN.Layer do
+  @moduledoc """
+  Это хорошая документация.
+  """
+  
   alias Emlt.NN.{Layer, Neuron}
 
-  def get_neyrons(layer) do
-    :ets.match_object(:neurons, {{:_, :_, layer}, :_})
+  def init(config) do
+    {xm, ym} = config.size
+
+    list_of_neurons =
+      for x <- 1..xm,
+          y <- 1..ym,
+          into: [],
+          do: Neuron.init({x, y, config.z_index}, config)
+
+    list_of_neurons =
+      case config.role do
+        "out" -> Enum.zip(list_of_neurons, config.targets)
+        _ -> list_of_neurons
+      end
+
+    list_of_neurons
+    |> Enum.each(fn neuron ->
+      neuron |> Neuron.insert()
+    end)
+  end
+
+  def get_neyrons(layer, config) do
+    :ets.match_object(config.table, {{:_, :_, layer}, :_})
     |> Enum.map(fn x ->
       {_key, neuron} = x
       neuron
     end)
   end
 
-
-
-  def get_matrix_from_layer(layer) do
-    {w, _h} = Emlt.NN.Network.config_data(:size, layer)
+  def get_matrix_from_layer(layer, config) do
+     {w, _} = config.size
 
     layer
-    |> get_neyrons()
+    |> get_neyrons(config)
     |> Enum.sort(&(get_x(&1) <= get_x(&2)))
     |> Enum.sort(&(get_y(&1) <= get_y(&2)))
     |> Enum.map(fn n ->
@@ -25,11 +48,11 @@ defmodule Emlt.NN.Layer do
     |> Matrex.new()
   end
 
-  def get_matrix_from_layer_with_signal(layer) do
+  def get_matrix_from_layer_with_signal(layer, config) do
     {w, _h} = Emlt.NN.Network.config_data(:size, layer)
 
     layer
-    |> get_neyrons()
+    |> get_neyrons(config)
     |> Enum.sort(&(get_x(&1) <= get_x(&2)))
     |> Enum.sort(&(get_y(&1) <= get_y(&2)))
     |> Enum.map(fn n ->
@@ -51,9 +74,9 @@ defmodule Emlt.NN.Layer do
     Map.fetch(n, key)
   end
 
-  def inspect(z) do
+  def inspect(z, config) do
     z
-    |> Layer.get_neyrons()
+    |> Layer.get_neyrons(config)
     |> Enum.sort(&(get(&2, :out) <= get(&1, :out)))
     |> Enum.map(fn n ->
       Neuron.format(n, :line)
@@ -61,22 +84,27 @@ defmodule Emlt.NN.Layer do
     |> IO.inspect()
   end
 
-  def get_res(z) do
+  def get_res(z, config) do
     z
-    |> Layer.get_neyrons()
+    |> Layer.get_neyrons(config)
     |> Enum.sort(&(get(&2, :out) <= get(&1, :out)))
     |> hd
     |> Map.fetch!(:target)
   end
 
-  # def call(task, opts) do
-  #   {xm, ym} = layer_conf.size
+  def prepare_tasks(%{task: task, conf: conf} = opts) do
+    {xm, ym} = conf.size
 
-  #   for i <- 1..xm,
-  #       j <- 1..ym,
-  #       into: [],
-  #       do:
-  #         opts = [{i, j, layer_conf.z_index} | opts]
-  #         Task.async(Neuron, task, opts)
-  # end
+    task_opts =
+      case task do
+        :signal -> %{conf: conf, prev: opts.prev}
+        :delta -> %{conf: conf, next: opts.next, target: opts.target}
+        :change_weight -> %{conf: conf, prev: opts.prev}
+      end
+
+    for i <- 1..xm,
+        j <- 1..ym,
+        into: [],
+        do: Task.async(Neuron, task, [Map.merge(task_opts, %{n_attr: {i, j, conf.z_index}})])
+  end
 end

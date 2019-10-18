@@ -1,84 +1,132 @@
 defmodule Emlt.NN.Network do
-  use GenServer
+  @moduledoc """
+  Это хорошая документация.
+  """
+  
+  alias Emlt.NN.{Neuron, Layer, Network}
 
-  alias Emlt.NN.{Neuron}
-
-  def start_link(state \\ []) do
-    GenServer.start_link(__MODULE__, state, name: __MODULE__)
-  end
-
-  def init(state) do
-    case Application.fetch_env!(:emlt, :mode) do
+  def init(config) do
+    case config.mode do
       :learn ->
-        Application.fetch_env!(:emlt, :nn_layers)
-        |> Enum.each(fn layer ->
-          init_layer(layer)
+        config.layers
+        |> Enum.each(fn layer_config ->
+          layer_config
+          |> Map.merge(%{
+            table: config.table
+          })
+          |> Layer.init()
         end)
 
       :test ->
-        backup = Application.fetch_env!(:emlt, :backup)
-        :dets.open_file(backup, type: :set)
-        :ets.from_dets(:neurons, backup)
+        :dets.open_file(config.backup, type: :set)
+        :ets.from_dets(config.table, config.backup)
     end
 
-    {:ok, state}
+    :ok
   end
 
-  defp init_layer(layer) do
-    {xm, ym} = layer.size
+  
+  def learn(config, signal, target) do
+    Network.signal(config, signal)
+    # Layer.inspect(4, config)
 
-    list_of_neurons =
-      for x <- 1..xm,
-          y <- 1..ym,
-          into: [],
-          do: init_data_neuron({x, y, layer.z_index}, layer)
+    Network.delta(config, signal, target)
+    Network.weight(config, signal, target)
+    Network.to_start(config)
 
-    list_of_neurons =
-      case layer.role do
-        "out" -> Enum.zip(list_of_neurons, layer.targets)
-        _ -> list_of_neurons
-      end
+    :ok
+  end
 
-    list_of_neurons
-    |> Enum.each(fn neuron ->
-      neuron |> Neuron.insert()
+  def test(config, signal) do    
+    Network.signal(config, signal)
+    target = Layer.get_res(3, config)
+    Emlt.NN.Network.to_start(config)
+    target
+  end
+
+  def get_conf(config, layer) do
+    config.layers
+    |> Enum.filter(fn x -> x.z_index == layer end)
+    |> hd
+    |> Map.merge(%{
+      table: config.table
+    })
+  end
+
+  def signal(config, signal) do
+    config.layers
+    |> Enum.each(fn conf ->
+      conf = Map.merge(conf, %{table: config.table})
+
+      prev =
+        case conf.z_index do
+          2 -> signal
+          _ -> Layer.get_matrix_from_layer(conf.z_index - 1, get_conf(config, conf.z_index - 1))
+        end
+
+      %{
+        task: :signal,
+        conf: conf,
+        prev: prev
+      }
+      |> Layer.prepare_tasks()
+      |> Task.yield_many(:infinity)
     end)
   end
 
-  defp init_data_neuron({x, y, z}, layer) do
-    nc = Matrex.new(layer.size_nc, layer.size_nc, fn -> Enum.random(layer.nc_weights) end)
+  def delta(config, signal, target) do
+    config.layers
+    |> Enum.reverse()
+    |> Enum.each(fn conf ->
+      conf = Map.merge(conf, %{table: config.table})
 
-    %{
-      key: {x, y, z},
-      x: x,
-      y: y,
-      z: z,
-      signal: 0,
-      out: 0,
-      delta: 0,
-      nc: nc,
-      target: "NULL"
-    }
+      next =
+        case conf.z_index do
+          3 -> []
+          _ -> Layer.get_neyrons(conf.z_index + 1, conf)
+        end
+
+      %{
+        task: :delta,
+        conf: conf,
+        next: next,
+        target: target
+      }
+      |> Layer.prepare_tasks()
+      |> Task.yield_many(:infinity)
+    end)
   end
 
-  def to_start do
+  def weight(config, signal, target) do
+    config.layers
+    |> Enum.reverse()
+    |> Enum.each(fn conf ->
+      conf = Map.merge(conf, %{table: config.table})
+
+      prev =
+        case conf.z_index do
+          2 -> signal
+          _ -> Layer.get_matrix_from_layer(conf.z_index - 1, get_conf(config, conf.z_index - 1))
+        end
+
+      %{
+        task: :change_weight,
+        conf: conf,
+        prev: prev
+      }
+      |> Layer.prepare_tasks()
+      |> Task.yield_many(:infinity)
+    end)
+  end
+
+  def to_start(config) do
     tasks =
-      :ets.match_object(:neurons, {{:_, :_, :_}, :_})
+      :ets.match_object(config.table, {{:_, :_, :_}, :_})
       |> Enum.map(fn neuron ->
         {key, _n} = neuron
-        Task.async(Neuron, :to_start, [key])
+        Task.async(Neuron, :to_start, [key, config])
       end)
 
     Task.yield_many(tasks, :infinity)
-  end
-
-  def config_data(key, z) do
-    layers =
-      Application.fetch_env!(:emlt, :nn_layers)
-      |> Enum.filter(fn l ->
-        l.z_index == z
-      end)
-      |> hd
-      |> Map.fetch!(key)
   end
 end

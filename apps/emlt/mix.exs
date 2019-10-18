@@ -35,13 +35,13 @@ defmodule Emlt.MixProject do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    [ 
+    [
       {:matrex, "~> 0.6"},
       {:csv, "~> 2.0.0"},
       {:math, "~> 0.3.0"},
-      
-
-  ]
+      {:earmark, "~> 1.4.2", only: :dev},
+      {:ex_doc, "~> 0.21", only: :dev}
+    ]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
