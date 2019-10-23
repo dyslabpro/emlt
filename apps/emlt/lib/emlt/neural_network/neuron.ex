@@ -1,6 +1,6 @@
 defmodule Emlt.NN.Neuron do
   @moduledoc """
-  Это хорошая документация.
+  The API for work with Neuron
   """
   
   alias Emlt.NN.{Neuron}

@@ -1,21 +1,6 @@
 # DigitRecognizer
 
-**TODO: Add description**
+The goal in this competition is to take an image of a handwritten single digit, and determine what that digit is.
+For every in the test set, you should predict the correct label.
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `digit_recognizer` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:digit_recognizer, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/digit_recognizer](https://hexdocs.pm/digit_recognizer).
-
+[More details](https://www.kaggle.com/c/digit-recognizer)

@@ -80,7 +80,7 @@ defmodule Titanik do
     fare_max = 512.3292 - 10
     fare_min = 4.0125
     fare_range = fare_max - fare_min
-    
+
     # %{
     #   "Age" => "22",
     #   "Cabin" => "",
@@ -119,12 +119,13 @@ defmodule Titanik do
     # Embarked 3
     emabarked = Map.get(x, "Embarked")
 
-    case emabarked do
-      "C" -> matrix = Matrex.set(matrix, 3, 1, 1)
-      "S" -> matrix = Matrex.set(matrix, 3, 2, 1)
-      "Q" -> matrix = Matrex.set(matrix, 3, 3, 1)
-      _ -> nil
-    end
+    matrix =
+      case emabarked do
+        "C" -> Matrex.set(matrix, 3, 1, 1)
+        "S" -> Matrex.set(matrix, 3, 2, 1)
+        "Q" -> Matrex.set(matrix, 3, 3, 1)
+        _ -> matrix
+      end
 
     # Fare 4
     fare =
@@ -133,21 +134,23 @@ defmodule Titanik do
 
     if fare != "" do
       fare =
-      fare
+        fare
         |> Integer.parse()
         |> Tuple.to_list()
         |> hd
-        
-      fare =  round(((fare - fare_min) / fare_range) * 10) + 1
+
+      fare = round((fare - fare_min) / fare_range * 10) + 1
+
       fare =
-      if fare > 10 do
-        10
-      else
-        fare
-      end
-      
+        if fare > 10 do
+          10
+        else
+          fare
+        end
+
       matrix = Matrex.set(matrix, 4, fare, 1)
     end
+
     # Name 
     # Parch 5
     parch =
@@ -168,11 +171,12 @@ defmodule Titanik do
     # Sex  7
     sex = Map.get(x, "Sex")
 
-    case sex do
-      "male" -> matrix = Matrex.set(matrix, 7, 1, 1)
-      "female" -> matrix = Matrex.set(matrix, 7, 2, 1)
-      _ -> nil
-    end
+    matrix =
+      case sex do
+        "male" -> Matrex.set(matrix, 7, 1, 1)
+        "female" -> Matrex.set(matrix, 7, 2, 1)
+        _ -> matrix
+      end
 
     # SibSp 8
     sibsp =

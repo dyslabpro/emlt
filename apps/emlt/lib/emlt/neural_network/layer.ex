@@ -1,6 +1,6 @@
 defmodule Emlt.NN.Layer do
   @moduledoc """
-  Это хорошая документация.
+  The API for work with layer of Neural network.
   """
   
   alias Emlt.NN.{Layer, Neuron}
