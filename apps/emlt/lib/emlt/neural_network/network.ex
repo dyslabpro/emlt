@@ -13,9 +13,9 @@ defmodule Emlt.NN.Network do
 
    
       %{
-        table: :digit_recognizer_neurons,     # table name in ets
+        table: :my_neurons_net,               # table name in ets
         mode: :learn,                         # neural network mode (test or learn)
-        backup: 'neurons-6.dets',             # dets backup file for neural network
+        backup: 'my_neurons_net.dets',        # dets backup file for neural network
         layers: [
           %{
             size: {17, 17},                   # size of matrix for this layer
@@ -105,7 +105,7 @@ defmodule Emlt.NN.Network do
     })
   end
 
-  defp signal(config, signal) do
+  def signal(config, signal) do
     config.layers
     |> Enum.each(fn conf ->
       conf = Map.merge(conf, %{table: config.table})
@@ -126,7 +126,7 @@ defmodule Emlt.NN.Network do
     end)
   end
 
-  defp delta(config, _signal, target) do
+  def delta(config, _signal, target) do
     config.layers
     |> Enum.reverse()
     |> Enum.each(fn conf ->
@@ -149,7 +149,7 @@ defmodule Emlt.NN.Network do
     end)
   end
 
-  defp weight(config, signal, _target) do
+  def weight(config, signal, _target) do
     config.layers
     |> Enum.reverse()
     |> Enum.each(fn conf ->
