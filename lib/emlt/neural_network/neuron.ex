@@ -105,7 +105,7 @@ defmodule Emlt.NN.Neuron do
   end
 
   def to_start(n_attr, conf) do
-    neuron =
+    _neuron =
       n_attr
       |> get(conf.table)
       |> Map.merge(%{signal: 0, delta: 0, out: 0})
