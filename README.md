@@ -13,6 +13,7 @@ Add `{:emlt, "~> 0.0.1"}` to your list of deps in your mix file, then run `mix d
 see example apps:
 
 https://github.com/dyslabpro/emlt_digit_recognizer
+
 https://github.com/dyslabpro/emlt_titanik
 
 
