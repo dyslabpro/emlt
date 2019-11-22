@@ -6,7 +6,7 @@ Machine learning toolkit written in Elixir
 
 ### Add as a dependency
 
-Add `{:emlt, "~> 0.0.1"}` to your list of deps in your mix file, then run `mix deps.get`.
+Add `{:emlt, git: "https://github.com/dyslabpro/emlt.git}` to your list of deps in your mix file, then run `mix deps.get`.
 
 
 ## Usage
