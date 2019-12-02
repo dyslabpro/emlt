@@ -11,7 +11,7 @@ defmodule Emlt.NN.Network do
 
   ## Examples
 
-   
+
       %{
         table: :my_neurons_net,               # table name in ets
         mode: :learn,                         # neural network mode (test or learn)
@@ -45,10 +45,9 @@ defmodule Emlt.NN.Network do
             rate: 0.1
           }
         ]
-      } |> Emlt.NN.Network.init    
+      } |> Emlt.NN.Network.init
 
   """
-  @spec init(Config.t()) :: atom()
   def init(config) do
     case config.mode do
       :learn ->
@@ -72,7 +71,6 @@ defmodule Emlt.NN.Network do
   @doc """
     Send signal as matrix to Neural network for learn
   """
-  @spec learn(Config.t(), Matrex.t(), any) :: :ok
   def learn(config, signal, target) do
     Network.signal(config, signal)
     # Layer.inspect(4, config)
@@ -87,7 +85,6 @@ defmodule Emlt.NN.Network do
   @doc """
     Send signal as matrix to Neural network for test
   """
-  @spec test(Config.t(), Matrex.t()) :: any
   def test(config, signal) do
     Network.signal(config, signal)
     target = Layer.get_res(3, config)
